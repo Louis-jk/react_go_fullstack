@@ -2,34 +2,46 @@ import { Badge, Box, Flex, Spinner, Text } from "@chakra-ui/react";
 import { FaCheckCircle } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
 import type { Todo } from "../types/todo.types";
-import { useMutation } from '@tanstack/react-query';
-import { API_TODOS_URL } from '@/config/config';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { deleteTodo, updateTodo } from '@/services/todoService';
 
 const TodoItem = ({ todo }: { todo: Todo }) => {
 
-	console.log(todo);
+	const queryClient = useQueryClient();
+	const isLoading = queryClient.isMutating() > 0;
 
-	const {mutate: updateTodo, isPending: isUpdating} = useMutation({
+	const {mutate: updateTodoMutation, isPending: isUpdating} = useMutation({
 		mutationKey: ["updateTodo"],
 		mutationFn: async () => {
-			if(todo.completed) return alert("Todo already completed");
-		
-			try {
-				const response = await fetch(`${API_TODOS_URL}/${todo.id}`, {
-					method: "PATCH",
-				});
-				const data = await response.json();
-
-				if(!response.ok) {
-					throw new Error(data.error || "Failed to update todo");
-				}
-				return data;
-			} catch (error) {
-				console.error("Error updating todo:", error);
-			}
+			if(isLoading) return alert("Please wait for the current operation to complete");
+			
+			const result = await updateTodo(todo.id, !todo.completed);
+			return result;
 		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["todos"] });
+		},
+		onError: (error) => {
+			alert(error.message);
+		}
 	});
 
+	const {mutate: deleteTodoMutation, isPending: isDeleting} = useMutation({
+		mutationKey: ["deleteTodo"],
+		mutationFn: async () => {
+			if(isLoading) return alert("Please wait for the current operation to complete");
+
+			const result = await deleteTodo(todo.id);
+			return result;
+		},
+		onSuccess: () => {
+			queryClient.setQueryData(["todos"], (oldData: Todo[]) => oldData.filter((t) => t.id !== todo.id));
+			queryClient.invalidateQueries({ queryKey: ["todos"] });
+		},
+		onError: (error) => {
+			alert(error.message);
+		}
+	})
 
 	return (
 		<Flex gap={2} alignItems={"center"}>
@@ -60,12 +72,11 @@ const TodoItem = ({ todo }: { todo: Todo }) => {
 				)}
 			</Flex>
 			<Flex gap={2} alignItems={"center"}>
-				<Box color={"green.500"} cursor={"pointer"} onClick={() => updateTodo()}>
-					{!isUpdating && <FaCheckCircle size={20} />}
-					{isUpdating && <Spinner size='sm' />}
+				<Box color={"green.500"} cursor={"pointer"} onClick={() => updateTodoMutation()}>
+					{!isUpdating ? <FaCheckCircle size={20} /> : <Spinner size='sm' />}					
 				</Box>
-				<Box color={"red.500"} cursor={"pointer"}>
-					<MdDelete size={25} />
+				<Box color={"red.500"} cursor={"pointer"} onClick={() => deleteTodoMutation()}>
+					{!isDeleting ? <MdDelete size={25} /> : <Spinner size='sm' />}					
 				</Box>
 			</Flex>
 		</Flex>

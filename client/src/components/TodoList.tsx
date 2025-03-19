@@ -2,14 +2,25 @@ import { Flex, Spinner, Stack, Text } from "@chakra-ui/react";
 import TodoItem from "./TodoItem";
 import { useQuery } from "@tanstack/react-query";
 import type { Todo } from "@/types/todo.types";
-import { API_TODOS_URL } from '@/config/config';
-
+import { getTodos } from '@/services/todoService';
 
 const TodoList = () => {
-	const { data: todos, isLoading } = useQuery<Todo[]>({
+	const { data: todos, isLoading, error } = useQuery<Todo[]>({
 		queryKey: ["todos"],
-		queryFn: () => fetchTodos(),
+		queryFn: getTodos,
+		staleTime: 5 * 60 * 1000,
+		gcTime: 30 * 60 * 1000,
+		retry: 2,
 	});
+
+	if(error) {
+		return (
+			<Stack alignItems="center" spaceY={4}>
+				<Text color="red.500">Failed to load tasks</Text>
+				<Text fontSize="sm" color="gray.500">Error: {error.message}</Text>
+			</Stack>
+		)
+	}
 	
 	return (
 		<>
@@ -31,8 +42,8 @@ const TodoList = () => {
 				</Stack>
 			)}
 			<Stack gap={3}>
-				{todos?.map((todo: Todo, index: number) => (
-					<TodoItem key={index.toString()} todo={todo} />
+				{todos?.map((todo: Todo) => (
+					<TodoItem key={todo.id} todo={todo} />
 				))}
 			</Stack>
 		</>
@@ -40,19 +51,3 @@ const TodoList = () => {
 };
 
 export default TodoList;
-
-
-const fetchTodos = async () => {
-	try {
-		const response = await fetch(API_TODOS_URL);
-		const data = await response.json();
-
-		if(!response.ok) {
-			throw new Error(data.error || "Failed to fetch todos");
-		}
-		return data || [];
-	} catch (error) {
-		console.error("Error fetching todos:", error);
-		throw error;
-	}
-};

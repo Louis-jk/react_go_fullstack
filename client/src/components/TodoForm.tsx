@@ -1,18 +1,32 @@
 import { useState } from "react"
 import { Button, Flex, Input, Spinner } from "@chakra-ui/react"
 import { IoMdAdd } from 'react-icons/io'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { createTodo } from '@/services/todoService'
 
 const TodoForm = () => {
 	const [newTodo, setNewTodo] = useState("")	
-	const [isPending, setIsPending] = useState(false)
-	
-	const createTodo = async (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault()		
-		alert("Todo added!")
-	}
+
+	const queryClient = useQueryClient();
+
+	const {mutate: createTodoMutation, isPending: isCreating} = useMutation({
+		mutationKey: ["createTodo"],
+		mutationFn: async (e: React.FormEvent<HTMLFormElement>) => {
+			e.preventDefault();
+			const result = await createTodo(newTodo);
+			setNewTodo("");
+			return result;		
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["todos"] });
+		},
+		onError: (error) => {
+			alert(error.message);
+		}
+	})
 
 	return (
-		<form onSubmit={createTodo}>
+		<form onSubmit={(e) => createTodoMutation(e)}>
 			<Flex gap={2}>
 				<Input
 					type="text" 
@@ -28,7 +42,7 @@ const TodoForm = () => {
 						transform: "scale(0.97)"
 					}}
 				>
-					{isPending ? <Spinner /> : <IoMdAdd />}
+					{isCreating ? <Spinner /> : <IoMdAdd />}
 				</Button>
 			</Flex>
 		</form>
