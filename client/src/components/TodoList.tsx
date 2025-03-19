@@ -1,37 +1,22 @@
 import { Flex, Spinner, Stack, Text } from "@chakra-ui/react";
-import { useState } from "react";
 import TodoItem from "./TodoItem";
-import type { Todo } from "../types/todo.types";
+import { useQuery } from "@tanstack/react-query";
+import type { Todo } from "@/types/todo.types";
+import { API_TODOS_URL } from '@/config/config';
+
 
 const TodoList = () => {
-	const [isLoading, setIsLoading] = useState(true);
-	const todos: Todo[] = [
-		{
-			_id: "1",
-			body: "Buy groceries",
-			completed: true,
-		},
-		{
-			_id: "2",
-			body: "Walk the dog",
-			completed: false,
-		},
-		{
-			_id: "3",
-			body: "Do laundry",
-			completed: false,
-		},
-		{
-			_id: "4",
-			body: "Cook dinner",
-			completed: true,
-		},
-	];
+	const { data: todos, isLoading } = useQuery<Todo[]>({
+		queryKey: ["todos"],
+		queryFn: () => fetchTodos(),
+	});
+	
 	return (
 		<>
 			<Text fontSize={"4xl"} textTransform={"uppercase"} fontWeight={"bold"} textAlign={"center"} my={2}>
 				Today's Tasks
 			</Text>
+
 			{isLoading && (
 				<Flex justifyContent={"center"} my={4}>
 					<Spinner size={"xl"} />
@@ -46,11 +31,28 @@ const TodoList = () => {
 				</Stack>
 			)}
 			<Stack gap={3}>
-				{todos?.map((todo) => (
-					<TodoItem key={todo._id} todo={todo} />
+				{todos?.map((todo: Todo, index: number) => (
+					<TodoItem key={index.toString()} todo={todo} />
 				))}
 			</Stack>
 		</>
 	);
 };
+
 export default TodoList;
+
+
+const fetchTodos = async () => {
+	try {
+		const response = await fetch(API_TODOS_URL);
+		const data = await response.json();
+
+		if(!response.ok) {
+			throw new Error(data.error || "Failed to fetch todos");
+		}
+		return data || [];
+	} catch (error) {
+		console.error("Error fetching todos:", error);
+		throw error;
+	}
+};
