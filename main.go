@@ -55,12 +55,13 @@ func main() {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     "http://localhost:5173",
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS",
 		AllowCredentials: true,
 	}))
 
 	app.Get("/api/todos", getTodos)
 	app.Post("/api/todos", createTodo)
-	app.Patch("/api/todos/:id", updateTodo)
+	app.Put("/api/todos/:id", updateTodo)
 	app.Delete("/api/todos/:id", deleteTodo)
 
 	port := os.Getenv("PORT")
@@ -118,20 +119,28 @@ func createTodo(c *fiber.Ctx) error {
 func updateTodo(c *fiber.Ctx) error {
 	id := c.Params("id")
 	objectId, err := primitive.ObjectIDFromHex(id)
+
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid ID"})
 	}
 
-	filter := bson.M{"_id": objectId}
-	update := bson.M{"$set": bson.M{"completed": true}}
-
-	_, err = collection.UpdateOne(context.Background(), filter, update)
-
-	if err != nil {
+	todo := new(Todo)
+	if err := c.BodyParser(todo); err != nil {
 		return err
 	}
 
-	return c.SendStatus(204)
+	filter := bson.M{"_id": objectId}
+	update := bson.M{"$set": bson.M{"completed": todo.Completed}}
+
+	// check if todo exists
+	result := collection.FindOneAndUpdate(context.Background(), filter, update, options.FindOneAndUpdate().SetReturnDocument(options.After))
+
+	updatedTodo := new(Todo)
+	if err := result.Decode(updatedTodo); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to decode update todo"})
+	}
+
+	return c.Status(200).JSON(updatedTodo)
 }
 
 func deleteTodo(c *fiber.Ctx) error {
