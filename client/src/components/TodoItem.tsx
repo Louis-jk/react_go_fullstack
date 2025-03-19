@@ -55,27 +55,27 @@ const TodoItem = ({ todo }: { todo: Todo }) => {
 				justifyContent={"space-between"}
 			>
 				<Text
-					color={todo.completed ? "green.200" : "yellow.100"}
+					color={todo.completed ? "grey.200" : "black.100"}
 					textDecoration={todo.completed ? "line-through" : "none"}
 				>
 					{todo.body}
 				</Text>
 				{todo.completed && (
-					<Badge ml='1' colorScheme='green'>
+					<Badge ml='1' bg="black.100" color="yellow.600">
 						Done
 					</Badge>
 				)}
 				{!todo.completed && (
-					<Badge ml='1' colorScheme='yellow'>
+					<Badge ml='1' bg="black.100" color="green.500">
 						In Progress
 					</Badge>
 				)}
 			</Flex>
 			<Flex gap={2} alignItems={"center"}>
-				<Box color={"green.500"} cursor={"pointer"} onClick={() => updateTodoMutation()}>
+				<Box color={todo.completed ? "green.500" : "gray.400"} cursor={"pointer"} onClick={() => updateTodoMutation()}>
 					{!isUpdating ? <FaCheckCircle size={20} /> : <Spinner size='sm' />}					
 				</Box>
-				<Box color={"red.500"} cursor={"pointer"} onClick={() => deleteTodoMutation()}>
+				<Box color={"gray.300"} cursor={"pointer"} onClick={() => deleteTodoMutation()}>
 					{!isDeleting ? <MdDelete size={25} /> : <Spinner size='sm' />}					
 				</Box>
 			</Flex>

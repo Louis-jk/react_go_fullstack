@@ -38,7 +38,7 @@ const TodoList = () => {
 					<Text fontSize={"xl"} textAlign={"center"} color={"gray.500"}>
 						All tasks completed! 🤞
 					</Text>
-					<img src='/go.png' alt='Go logo' width={70} height={70} />
+					<img src='/images/fiber.png' alt='fiber logo' width={120} height={70} style={{ userSelect: "none", pointerEvents: "none" }} />
 				</Stack>
 			)}
 			<Stack gap={3}>
